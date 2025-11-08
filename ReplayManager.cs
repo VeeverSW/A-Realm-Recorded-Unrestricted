@@ -172,7 +172,7 @@ public static unsafe class ReplayManager
         if (Common.ContentsReplayModule->InPlayback)
         {
             Common.ContentsReplayModule->playbackControls |= 8; // Pause
-            DalamudApi.PrintError("Plugin was unloaded, playback will be broken if the plugin or replay is not reloaded.");
+            DalamudApi.PrintError("插件已卸载，如未重新加载插件或重放，回放将无法正常播放");
         }
 
         Marshal.FreeHGlobal((nint)loadedReplay);
