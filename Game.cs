@@ -77,9 +77,9 @@ public static unsafe class Game
 
         var contentFinderCondition = DalamudApi.DataManager.GetExcelSheet<Lumina.Excel.Sheets.ContentFinderCondition>().GetRowOrDefault(id);
         if (contentFinderCondition == null) return;
-
+        
         var contentType = contentFinderCondition.Value.ContentType.RowId;
-        if (!whitelistedContentTypes.Contains(contentType)) return;
+        if (!whitelistedContentTypes.Contains(contentType) && !ARealmRecorded.Config.EnableUnrestricted) return;
 
         contentsReplayModule->FixNextReplaySaveSlot();
         ContentsReplayModule.initializeRecording.Original(contentsReplayModule);
@@ -334,7 +334,7 @@ public static unsafe class Game
         }
         catch (Exception e)
         {
-            DalamudApi.PrintError($"Failed to rename replay\n{e}");
+            DalamudApi.PrintError($"重命名回放失败\n{e}");
         }
     }
 
@@ -371,7 +371,7 @@ public static unsafe class Game
         }
         catch (Exception e)
         {
-            DalamudApi.PrintError($"Failed to rename replay\n{e}");
+            DalamudApi.PrintError($"重命名回放失败\n{e}");
         }
     }
 
@@ -403,7 +403,7 @@ public static unsafe class Game
         }
         catch (Exception e)
         {
-            DalamudApi.PrintError($"Failed to delete replay\n{e}");
+            DalamudApi.PrintError($"尝试删除回放失败\n{e}");
         }
     }
 
@@ -458,7 +458,7 @@ public static unsafe class Game
                 catch { }
             }
 
-            DalamudApi.PrintError($"Failed to archive replays\n{e}");
+            DalamudApi.PrintError($"尝试存档回放失败\n{e}");
         }
 
         GetReplayList();
@@ -497,7 +497,7 @@ public static unsafe class Game
         }
         catch (Exception e)
         {
-            DalamudApi.PrintError($"Failed to copy replay to slot {slot + 1}\n{e}");
+            DalamudApi.PrintError($"无法将回放复制到栏位: {slot + 1}\n{e}");
         }
     }
 

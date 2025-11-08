@@ -74,11 +74,19 @@ public static unsafe class ReplayListUI
                 Game.GetReplayList();
                 needSort = true;
             }
+        }
+        ImGuiEx.SetItemTooltip("刷新回放列表");
 
+        using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
+        {
             ImGui.SameLine();
             if (ImGui.Button(FontAwesomeIcon.FolderOpen.ToIconString()))
                 Game.OpenReplayFolder();
+        }
+        ImGuiEx.SetItemTooltip("打开本地回放文件夹");
 
+        using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
+        {
             ImGui.SameLine();
             if (ImGui.Button(FontAwesomeIcon.FileArchive.ToIconString()))
             {
@@ -86,25 +94,30 @@ public static unsafe class ReplayListUI
                 needSort = true;
             }
         }
-        ImGuiEx.SetItemTooltip("Archive saved unplayable replays.");
+        ImGuiEx.SetItemTooltip("打包压缩无法播放的回放");
 
         using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
         {
             ImGui.SameLine();
             if (ImGui.Button(FontAwesomeIcon.Cog.ToIconString()))
                 showPluginSettings ^= true;
+        }
+        ImGuiEx.SetItemTooltip("设置");
+
 #if DEBUG
+        using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
+        {
             ImGui.SameLine();
             if (ImGui.Button(FontAwesomeIcon.ExclamationTriangle.ToIconString()))
                 Game.ReadPackets(Game.LastSelectedReplay);
-#endif
         }
-
+#endif
+        
         if (!displayDetachedReplayList)
         {
             using (ImGuiEx.StyleColorBlock.Begin(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive)))
             {
-                if (DalamudApi.GameConfig.UiConfig.TryGetBool(nameof(UiConfigOption.ContentsReplayEnable), out var b) && !b && ImGui.Button("RECORDING IS CURRENTLY DISABLED, CLICK HERE TO ENABLE"))
+                if (DalamudApi.GameConfig.UiConfig.TryGetBool(nameof(UiConfigOption.ContentsReplayEnable), out var b) && !b && ImGui.Button("!!! 录制功能当前已关闭，点击此处启用 !!!"))
                     DalamudApi.GameConfig.UiConfig.Set(nameof(UiConfigOption.ContentsReplayEnable), true);
             }
         }
@@ -236,13 +249,13 @@ public static unsafe class ReplayListUI
                     {
                         for (byte j = 0; j < 3; j++)
                         {
-                            if (!ImGui.Selectable($"Copy to slot #{j + 1}")) continue;
+                            if (!ImGui.Selectable($"复制到栏位 #{j + 1}")) continue;
                             Game.CopyReplayIntoSlot(agent, file, header, j);
                             needSort = true;
                         }
                     }
 
-                    if (ImGui.Selectable("Delete"))
+                    if (ImGui.Selectable("删除"))
                     {
                         Game.DeleteReplay(file);
                         needSort = true;
@@ -281,15 +294,18 @@ public static unsafe class ReplayListUI
 
         var save = false;
 
-        save |= ImGui.Checkbox("Enable Recording Icon", ref ARealmRecorded.Config.EnableRecordingIcon);
-        ImGuiEx.SetItemTooltip("Enables the game's recording icon next to the world / time information (Server info bar).");
+        save |= ImGui.Checkbox("启用录制图标", ref ARealmRecorded.Config.EnableRecordingIcon);
+        ImGuiEx.SetItemTooltip("在游戏界面的世界名 / 时间信息旁（服务器信息栏）添加录制图标");
+        
+        save |= ImGui.Checkbox("启用解限模式", ref ARealmRecorded.Config.EnableUnrestricted);
+        ImGuiEx.SetItemTooltip("允许A Realm Recorded录制所有副本场景");
 
-        save |= ImGui.InputInt("Max Replays", ref ARealmRecorded.Config.MaxAutoRenamedReplays);
-        ImGuiEx.SetItemTooltip("Max number of replays to keep in the autorenamed folder.");
+        save |= ImGui.InputInt("最大回放数量", ref ARealmRecorded.Config.MaxAutoRenamedReplays);
+        ImGuiEx.SetItemTooltip("在 `autorenamed` 文件夹中保留的最大回放数量");
 
-        save |= ImGui.InputInt("Max Deleted Replays", ref ARealmRecorded.Config.MaxDeletedReplays);
-        ImGuiEx.SetItemTooltip("Max number of replays to keep in the deleted folder.");
-
+        save |= ImGui.InputInt("最大删除回放保留数量", ref ARealmRecorded.Config.MaxDeletedReplays);
+        ImGuiEx.SetItemTooltip("在 `deleted` 文件夹中可保留的最大回放数量");
+        
         if (save)
             ARealmRecorded.Config.Save();
 
