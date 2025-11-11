@@ -99,12 +99,12 @@ public static unsafe class PlaybackControlsUI
         //ImGui.SameLine();
         if (ImGuiEx.FontButton(FontAwesomeIcon.Users.ToIconString(), UiBuilder.IconFont))
             Framework.Instance()->GetUIModule()->EnterGPose();
-        ImGuiEx.SetItemTooltip("Enters group pose.");
+        ImGuiEx.SetItemTooltip("进入gpose(集体动作).");
 
         ImGui.SameLine();
         if (ImGuiEx.FontButton(FontAwesomeIcon.Video.ToIconString(), UiBuilder.IconFont))
             Framework.Instance()->GetUIModule()->EnterIdleCam(0, DalamudApi.TargetManager.FocusTarget is { } focus ? focus.GameObjectId : 0xE0000000);
-        ImGuiEx.SetItemTooltip("Enters idle camera on the current focus target.");
+        ImGuiEx.SetItemTooltip("进入当前焦点目标的闲置镜头模式");
 
         ImGui.SameLine();
         var v = Game.IsWaymarkVisible;
@@ -114,7 +114,7 @@ public static unsafe class PlaybackControlsUI
             ARealmRecorded.Config.EnableWaymarks ^= true;
             ARealmRecorded.Config.Save();
         }
-        ImGuiEx.SetItemTooltip(v ? "Hide waymarks." : "Show waymarks.");
+        ImGuiEx.SetItemTooltip(v ? "隐藏场景标记" : "启用场景标记");
 
         using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
         {
@@ -224,26 +224,26 @@ public static unsafe class PlaybackControlsUI
     {
         var save = false;
 
-        if (ImGui.Checkbox("Hide Own Name (Requires Replay Restart)", ref ARealmRecorded.Config.EnableHideOwnName))
+        if (ImGui.Checkbox("隐藏自己的名字 (需要重启回放)", ref ARealmRecorded.Config.EnableHideOwnName))
         {
             Game.replaceLocalPlayerNamePatch.Toggle();
             save = true;
         }
 
-        save |= ImGui.Checkbox("Enable Quick Chapter Load", ref ARealmRecorded.Config.EnableQuickLoad);
+        save |= ImGui.Checkbox("启用快速章节加载", ref ARealmRecorded.Config.EnableQuickLoad);
 
-        save |= ImGui.Checkbox("Enable Right Click to Jump to Time", ref ARealmRecorded.Config.EnableJumpToTime);
+        save |= ImGui.Checkbox("右键直接跳转到当前时间", ref ARealmRecorded.Config.EnableJumpToTime);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Doing this WILL result in playback not appearing correctly!");
+            ImGui.SetTooltip("使用此功能可能会导致回放无法正常显示!");
         ImGui.SameLine();
         using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
             ImGui.TextColored(new Vector4(1, 1, 0, 1), FontAwesomeIcon.ExclamationTriangle.ToIconString());
 
-        save |= ImGui.SliderFloat("Loading Speed", ref ARealmRecorded.Config.MaxSeekDelta, 100, 2000, "%.f%%");
+        save |= ImGui.SliderFloat("加载速度", ref ARealmRecorded.Config.MaxSeekDelta, 100, 2000, "%.f%%");
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Can cause issues with some fights that contain arena changes.");
+            ImGui.SetTooltip("某些带有场地变化的战斗中可能会出问题");
 
-        save |= ImGui.SliderFloat("Speed Preset", ref ARealmRecorded.Config.CustomSpeedPreset, 0.05f, 60, "%.2fx", ImGuiSliderFlags.AlwaysClamp);
+        save |= ImGui.SliderFloat("自定义速度倍率设置", ref ARealmRecorded.Config.CustomSpeedPreset, 0.05f, 60, "%.2fx", ImGuiSliderFlags.AlwaysClamp);
 
         if (save)
             ARealmRecorded.Config.Save();
