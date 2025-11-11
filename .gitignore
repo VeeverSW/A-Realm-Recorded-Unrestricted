@@ -6,3 +6,19 @@ obj/
 bin/
 
 .idea
+
+__pycache__
+
+ana
+
+*.py
+
+*.bat
+
+*.csv
+
+*.txt
+
+*.json
+
+*.dat
