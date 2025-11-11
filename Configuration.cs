@@ -6,8 +6,8 @@ public class Configuration : PluginConfiguration, IPluginConfiguration
 {
     public int Version { get; set; }
     public string LastLoadedReplay;
-    public bool EnableRecordingIcon = false;
-    public bool EnableUnrestricted = false;
+    public bool EnableRecordingIcon = true;
+    public bool EnableUnrestricted = true;
     public int MaxAutoRenamedReplays = 30;
     public int MaxDeletedReplays = 10;
     public bool EnablePlaybackControlHiding = false;
