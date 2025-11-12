@@ -15,6 +15,6 @@
   "LoadPriority": 0,
   "RepoUrl": "https://github.com/VeeverSW/A-Realm-Recorded-Unrestricted",
   "IconUrl": "https://raw.githubusercontent.com/VeeverSW/DalamudPlugins/main/Plugins/A-Realm-Recorded-Unrestricted/icon.png",
-  "Changelog": "Update Unrestricted mode and translate to CN"
+  "Changelog": "添加了显示真实名字功能（需要工具）\n添加了可调整ui录制者偏移"
 }
 
