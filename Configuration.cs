@@ -10,8 +10,10 @@ public class Configuration : PluginConfiguration, IPluginConfiguration
     public bool EnableUnrestricted = true;
     public int MaxAutoRenamedReplays = 30;
     public int MaxDeletedReplays = 10;
+    public float UiOffset = 40f;
     public bool EnablePlaybackControlHiding = false;
     public bool EnableHideOwnName = false;
+    public bool EnableShowRealNames = true;
     public bool EnableQuickLoad = true;
     public bool EnableJumpToTime = false;
     public float MaxSeekDelta = 100;

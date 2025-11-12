@@ -121,9 +121,15 @@ public static unsafe class PlaybackControlsUI
             ImGui.SameLine();
             if (ImGui.Button(FontAwesomeIcon.Cog.ToIconString()))
                 showReplaySettings ^= true;
-
+        }
+        ImGuiEx.SetItemTooltip("设置");
+        
+        using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
+        {
             ImGui.SameLine();
+            
             ImGui.Button(FontAwesomeIcon.Skull.ToIconString());
+
             if (ImGui.BeginPopupContextItem(ImU8String.Empty, ImGuiPopupFlags.MouseButtonLeft))
             {
                 if (ImGui.Selectable(FontAwesomeIcon.DoorOpen.ToIconString()))
@@ -145,7 +151,7 @@ public static unsafe class PlaybackControlsUI
 
             using (ImGuiEx.StyleColorBlock.Begin(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive)))
             {
-                if (ImGui.Button("UNSTUCK") && segment != null)
+                if (ImGui.Button("解除卡死") && segment != null)
                     Common.ContentsReplayModule->overallDataOffset += segment->Length;
             }
         }
@@ -161,7 +167,7 @@ public static unsafe class PlaybackControlsUI
                 ARealmRecorded.Config.Save();
             }
         }
-        ImGuiEx.SetItemTooltip("Hides the menu under certain circumstances.");
+        ImGuiEx.SetItemTooltip("在特定情况下隐藏菜单");
 
         const int restartDelayMS = 12_000;
         var sliderWidth = ImGui.GetContentRegionAvail().X;
@@ -238,6 +244,14 @@ public static unsafe class PlaybackControlsUI
         ImGui.SameLine();
         using (ImGuiEx.FontBlock.Begin(UiBuilder.IconFont))
             ImGui.TextColored(new Vector4(1, 1, 0, 1), FontAwesomeIcon.ExclamationTriangle.ToIconString());
+        
+        save |= ImGui.SliderFloat(
+            "UI角色偏移", ref ARealmRecorded.Config.UiOffset, 0f, 100f, "%.2f");
+        ImGuiEx.SetItemTooltip("如果ui中角色重叠可以尝试调整此偏移，精准到小数，默认为40（示例: 34.45）\n设置完尝试播放即可(可以边播放边根据位置设置(如果没有实时变化先尝试快进一下))");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100f);
+        save |= ImGui.InputFloat(
+            "", ref ARealmRecorded.Config.UiOffset);
 
         save |= ImGui.SliderFloat("加载速度", ref ARealmRecorded.Config.MaxSeekDelta, 100, 2000, "%.f%%");
         if (ImGui.IsItemHovered())

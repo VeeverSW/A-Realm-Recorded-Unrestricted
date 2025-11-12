@@ -6,11 +6,15 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Config;
 using Dalamud.Hooking;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using Hypostasis.Game.Structures;
 
 namespace ARealmRecorded;
@@ -35,6 +39,15 @@ public static unsafe class Game
     private static FFXIVReplay.Header lastSelectedHeader;
 
     private static bool wasRecording = false;
+    
+    private static ReplayMetadata? cachedMetadata = null;
+    private static string? cachedMetadataPath = null;
+    
+    private static readonly Dictionary<int, string> cachedPlayerNames = new();
+    
+    private static string? lastErrorJsonPath = null;
+    private static DateTime lastErrorTime = DateTime.MinValue;
+    private static readonly TimeSpan errorCooldown = TimeSpan.FromSeconds(10);
 
     private static readonly HashSet<uint> whitelistedContentTypes = [ 1, 2, 3, 4, 5, 9, 28, 29, 30, 37 ]; // 22 Event, 26 Eureka, 27 Carnivale
 
@@ -518,6 +531,175 @@ public static unsafe class Game
 
     public static void SetConditionFlag(ConditionFlag flag, bool b) => *(bool*)(DalamudApi.Condition.Address + (int)flag) = b;
 
+    private static void Handler(AddonEvent type, AddonArgs args)
+    {
+        
+        var Ttype = GameMain.Instance()->CurrentTerritoryIntendedUseId;
+        if (!DalamudApi.Condition[ConditionFlag.DutyRecorderPlayback]) return;
+        if (ARealmRecorded.Config.EnableShowRealNames)
+        {
+        if (string.IsNullOrEmpty(LastSelectedReplay)) return;
+
+        var addon = (AddonPartyList*)DalamudApi.GameGui.GetAddonByName("_PartyList").Address;
+        if (addon == null) return;
+
+        try
+        {
+            var jsonPath = LastSelectedReplay + ".json";
+            if (cachedMetadataPath != jsonPath)
+            {
+                cachedPlayerNames.Clear();
+
+                if (!File.Exists(jsonPath))
+                {
+                    cachedMetadata = null;
+                    cachedMetadataPath = null;
+                    
+                    var now = DateTime.Now;
+                    if (lastErrorJsonPath != jsonPath || now - lastErrorTime > errorCooldown)
+                    {
+                        DalamudApi.PrintError($"未找到回放json文件: {Path.GetFileName(jsonPath)}\n请生成 JSON 文件，或关闭真实名字开关");
+                        lastErrorJsonPath = jsonPath;
+                        lastErrorTime = now;
+                    }
+                    return;
+                }
+
+                var jsonText = File.ReadAllText(jsonPath);
+                cachedMetadata = System.Text.Json.JsonSerializer.Deserialize<ReplayMetadata>(jsonText);
+                cachedMetadataPath = jsonPath;
+            }
+
+            if (cachedMetadata?.Players == null)
+            {
+                DalamudApi.LogError("[PartyList] cachedMetadata.Players is null");
+                return;
+            }
+
+            var recorder = cachedMetadata.Players.FirstOrDefault(p => p.IsRecorder);
+            
+            if (recorder == null)
+            {
+                DalamudApi.LogError("[PartyList] 未找到录制者");
+                return;
+            }
+            var recorderCid = recorder.ContentId;
+
+            int recorderIndex = recorder.Index;
+
+            // UI -> JSON
+            var uiToJsonMap = new List<int>();
+
+            // UI[0]
+            uiToJsonMap.Add(recorderIndex);
+            
+            for (int jsonIndex = 0; jsonIndex < cachedMetadata.Players.Length; jsonIndex++)
+            {
+                if (jsonIndex != recorderIndex)
+                    uiToJsonMap.Add(jsonIndex);
+            }
+
+#if DEBUG
+            DalamudApi.LogInfo("[PartyList] === 当前显示的名字 ===");
+            for (int i = 0; i < addon->MemberCount && i < 8; i++)
+            {
+                var member = addon->PartyMembers[i];
+                if (member.Name != null && member.Name->IsVisible())
+                {
+                    var currentName = member.Name->NodeText.ToString();
+                    DalamudApi.LogInfo($"[PartyList] UI[{i}] 当前显示: '{currentName}'");
+                }
+            }
+            
+            DalamudApi.LogInfo("[PartyList] === JSON 玩家顺序 ===");
+            for (int i = 0; i < cachedMetadata.Players.Length; i++)
+            {
+                var player = cachedMetadata.Players[i];
+                var mark = player.IsRecorder ? " ←录制者" : "";
+                DalamudApi.LogInfo($"[PartyList] JSON[{i}]: '{player.Name}'{mark}");
+            }
+            
+            DalamudApi.LogInfo($"[PartyList] === JsonMap ===");
+            DalamudApi.LogInfo($"[PartyList] [{string.Join(", ", uiToJsonMap)}]");
+#endif
+            
+            for (int uiIndex = 0; uiIndex < addon->MemberCount && uiIndex < 8 && uiIndex < uiToJsonMap.Count; uiIndex++)
+            {
+                var member = addon->PartyMembers[uiIndex];
+                if (member.Name == null || !member.Name->IsVisible())
+                    continue;
+
+                int jsonIndex = uiToJsonMap[uiIndex];
+                var player = cachedMetadata.Players[jsonIndex];
+                if (string.IsNullOrEmpty(player.Name)) continue;
+                
+                var currentName = member.Name->NodeText.ToString();
+                
+                if (currentName == player.Name)
+                {
+#if DEBUG
+                    DalamudApi.LogInfo($"[PartyList] UI[{uiIndex}] correct: '{player.Name}'");
+#endif
+                    continue;
+                }
+                
+                member.Name->SetText(player.Name);
+
+#if DEBUG
+                DalamudApi.LogInfo($"[PartyList] UI[{uiIndex}] -> JSON[{jsonIndex}]: '{currentName}' => '{player.Name}'");
+#endif
+            }
+
+            var height = 28 * ARealmRecorded.Config.UiOffset;
+            for (uint i = 11; i < 18; i++)
+            {
+                var node = addon->GetNodeById(i);
+                if (node != null)
+                {
+                    height -= (int)node->Y;
+                    //DalamudApi.LogDebug($"高度：{height}, node: {node->NodeId}");
+                }
+            }
+            var mainNode = addon->GetNodeById(10u);
+            if (mainNode != null)
+            {
+                mainNode->SetPositionShort(0, (short)height);
+                //DalamudApi.LogDebug($"mainNode: 高度：{height}, node: {mainNode->NodeId}");
+            }
+                
+        }
+        catch (Exception e)
+        {
+            DalamudApi.LogError($"[PartyList] 更新队伍名字失败: {e}");
+        }
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(LastSelectedReplay)) return;
+
+            var addon = (AddonPartyList*)DalamudApi.GameGui.GetAddonByName("_PartyList").Address;
+            if (addon == null) return;
+            var height = 28 * ARealmRecorded.Config.UiOffset;
+            
+            for (uint i = 11; i < 18; i++)
+            {
+                var node = addon->GetNodeById(i);
+                if (node != null)
+                {
+                    height -= (int)node->Y;
+                    //DalamudApi.LogDebug($"高度：{height}, node: {node->NodeId}");
+                }
+            }
+            var mainNode = addon->GetNodeById(10u);
+            if (mainNode != null)
+            {
+                mainNode->SetPositionShort(0, (short)height);
+                //DalamudApi.LogDebug($"mainNode: 高度：{height}, node: {mainNode->NodeId}");
+            }
+        }
+
+    }
+
     [Conditional("DEBUG")]
     public static void ReadPackets(string path)
     {
@@ -579,6 +761,8 @@ public static unsafe class Game
 
         Common.ContentsReplayModule->SetSavedReplayCIDs(DalamudApi.ClientState.LocalContentId);
 
+        DalamudApi.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "_PartyList", Handler);
+
         if (Common.ContentsReplayModule->InPlayback && Common.ContentsReplayModule->fileStream != nint.Zero && *(long*)Common.ContentsReplayModule->fileStream == 0)
             ReplayManager.LoadReplay(ARealmRecorded.Config.LastLoadedReplay);
     }
@@ -590,6 +774,8 @@ public static unsafe class Game
 
         if (Common.ContentsReplayModule != null)
             Common.ContentsReplayModule->SetSavedReplayCIDs(0);
+
+        DalamudApi.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "_PartyList", Handler);
 
         ReplayManager.Dispose();
     }

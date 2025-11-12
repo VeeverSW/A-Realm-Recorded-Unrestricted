@@ -299,6 +299,17 @@ public static unsafe class ReplayListUI
         
         save |= ImGui.Checkbox("启用解限模式", ref ARealmRecorded.Config.EnableUnrestricted);
         ImGuiEx.SetItemTooltip("允许A Realm Recorded录制所有副本场景");
+        
+        save |= ImGui.Checkbox("显示真实名字", ref ARealmRecorded.Config.EnableShowRealNames);
+        ImGuiEx.SetItemTooltip("可能存在bug，需要json文件");
+        
+        save |= ImGui.SliderFloat(
+            "UI角色偏移", ref ARealmRecorded.Config.UiOffset, 0f, 100f, "%.2f");
+        ImGuiEx.SetItemTooltip("如果ui中角色重叠可以尝试调整此偏移，精准到小数，默认为40（示例: 34.45）");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100f);
+        save |= ImGui.InputFloat(
+            "", ref ARealmRecorded.Config.UiOffset);
 
         save |= ImGui.InputInt("最大回放数量", ref ARealmRecorded.Config.MaxAutoRenamedReplays);
         ImGuiEx.SetItemTooltip("在 `autorenamed` 文件夹中保留的最大回放数量");
