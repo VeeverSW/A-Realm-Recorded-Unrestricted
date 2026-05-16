@@ -4,6 +4,7 @@
   "Punchline": "可以让你使用副本录制功能(解限版)",
   "Description": "为副本记录器添加了额外功能，并在副本中自动录制\n在旅馆中使用 /record 指令来打开回放列表\n如果相关指令未解锁，请完成「回顾英雄诗篇」任务",
   "InternalName": "A-Realm-Recorded-Unrestricted",
+  "AssemblyVersion": "1.0.3.0",
   "ApplicableVersion": "any",
   "Tags": [
   "utility"
@@ -15,6 +16,6 @@
   "LoadPriority": 0,
   "RepoUrl": "https://github.com/VeeverSW/A-Realm-Recorded-Unrestricted",
   "IconUrl": "https://raw.githubusercontent.com/VeeverSW/DalamudPlugins/main/Plugins/A-Realm-Recorded-Unrestricted/icon.png",
-  "Changelog": "添加了显示真实名字功能（需要工具）\n添加了可调整ui录制者偏移"
+  "Changelog": "7.5"
 }
 
