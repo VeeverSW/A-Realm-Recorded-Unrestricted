@@ -8,7 +8,7 @@
   "Tags": [
   "utility"
   ],
-  "DalamudApiLevel": 13,
+  "DalamudApiLevel": 15,
   "LoadRequiredState": 0,
   "LoadSync": false,
   "CanUnloadAsync": false,
